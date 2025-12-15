@@ -3,7 +3,7 @@
  */
 
 // 设置拖拽功能
-Live2DManager.prototype.setupDragAndDrop = function(model) {
+Live2DManager.prototype.setupDragAndDrop = function (model) {
     model.interactive = true;
     // 移除 stage.hitArea = screen，避免阻挡背景点击
     // this.pixi_app.stage.interactive = true;
@@ -24,7 +24,7 @@ Live2DManager.prototype.setupDragAndDrop = function(model) {
                 btn.style.pointerEvents = 'none';
             }
         });
-        
+
         // 收集并处理所有按钮包装器元素
         const wrappers = new Set();
         buttons.forEach(btn => {
@@ -32,7 +32,7 @@ Live2DManager.prototype.setupDragAndDrop = function(model) {
                 wrappers.add(btn.parentElement);
             }
         });
-        
+
         wrappers.forEach(wrapper => {
             const currentValue = wrapper.style.pointerEvents || '';
             wrapper.setAttribute('data-prev-pointer-events', currentValue);
@@ -57,21 +57,21 @@ Live2DManager.prototype.setupDragAndDrop = function(model) {
 
     model.on('pointerdown', (event) => {
         if (this.isLocked) return;
-        
+
         // 检测是否为触摸事件，且是多点触摸（双指缩放）
         const originalEvent = event.data.originalEvent;
         if (originalEvent && originalEvent.touches && originalEvent.touches.length > 1) {
             // 多点触摸时不启动拖拽
             return;
         }
-        
+
         isDragging = true;
         this.isFocusing = false; // 拖拽时禁用聚焦
         const globalPos = event.data.global;
         dragStartPos.x = globalPos.x - model.x;
         dragStartPos.y = globalPos.y - model.y;
         document.getElementById('live2d-canvas').style.cursor = 'grabbing';
-        
+
         // 开始拖动时，临时禁用按钮的事件拦截
         enableButtonEventPropagation();
     });
@@ -80,10 +80,10 @@ Live2DManager.prototype.setupDragAndDrop = function(model) {
         if (isDragging) {
             isDragging = false;
             document.getElementById('live2d-canvas').style.cursor = 'grab';
-            
+
             // 拖拽结束后恢复按钮的事件拦截
             disableButtonEventPropagation();
-            
+
             // 拖拽结束后自动保存位置
             this._savePositionAfterInteraction();
         }
@@ -98,12 +98,12 @@ Live2DManager.prototype.setupDragAndDrop = function(model) {
                 document.getElementById('live2d-canvas').style.cursor = 'grab';
                 return;
             }
-            
+
             // 将 window 坐标转换为 Pixi 全局坐标 (通常在全屏下是一样的，但为了保险)
             // 这里假设 canvas 是全屏覆盖的
             const x = event.clientX;
             const y = event.clientY;
-            
+
             model.x = x - dragStartPos.x;
             model.y = y - dragStartPos.y;
         }
@@ -129,7 +129,7 @@ Live2DManager.prototype.setupDragAndDrop = function(model) {
 };
 
 // 设置滚轮缩放
-Live2DManager.prototype.setupWheelZoom = function(model) {
+Live2DManager.prototype.setupWheelZoom = function (model) {
     const onWheelScroll = (event) => {
         if (this.isLocked || !this.currentModel) return;
         event.preventDefault();
@@ -137,7 +137,7 @@ Live2DManager.prototype.setupWheelZoom = function(model) {
         const oldScale = this.currentModel.scale.x;
         let newScale = event.deltaY < 0 ? oldScale * scaleFactor : oldScale / scaleFactor;
         this.currentModel.scale.set(newScale);
-        
+
         // 使用防抖动保存缩放，避免滚轮过程中频繁保存
         this._debouncedSavePosition();
     };
@@ -151,21 +151,21 @@ Live2DManager.prototype.setupWheelZoom = function(model) {
 };
 
 // 设置触摸缩放（双指捏合）
-Live2DManager.prototype.setupTouchZoom = function(model) {
+Live2DManager.prototype.setupTouchZoom = function (model) {
     const view = this.pixi_app.view;
     let initialDistance = 0;
     let initialScale = 1;
     let isTouchZooming = false;
-    
+
     const getTouchDistance = (touch1, touch2) => {
         const dx = touch2.clientX - touch1.clientX;
         const dy = touch2.clientY - touch1.clientY;
         return Math.sqrt(dx * dx + dy * dy);
     };
-    
+
     const onTouchStart = (event) => {
         if (this.isLocked || !this.currentModel) return;
-        
+
         // 检测双指触摸
         if (event.touches.length === 2) {
             event.preventDefault();
@@ -174,24 +174,24 @@ Live2DManager.prototype.setupTouchZoom = function(model) {
             initialScale = this.currentModel.scale.x;
         }
     };
-    
+
     const onTouchMove = (event) => {
         if (this.isLocked || !this.currentModel || !isTouchZooming) return;
-        
+
         // 双指缩放
         if (event.touches.length === 2) {
             event.preventDefault();
             const currentDistance = getTouchDistance(event.touches[0], event.touches[1]);
             const scaleChange = currentDistance / initialDistance;
             let newScale = initialScale * scaleChange;
-            
+
             // 限制缩放范围，避免过大或过小
             newScale = Math.max(0.1, Math.min(2.0, newScale));
-            
+
             this.currentModel.scale.set(newScale);
         }
     };
-    
+
     const onTouchEnd = (event) => {
         // 当手指数量小于2时，停止缩放
         if (event.touches.length < 2) {
@@ -202,7 +202,7 @@ Live2DManager.prototype.setupTouchZoom = function(model) {
             isTouchZooming = false;
         }
     };
-    
+
     // 移除旧的监听器（如果存在）
     if (view.lastTouchStartListener) {
         view.removeEventListener('touchstart', view.lastTouchStartListener);
@@ -213,12 +213,12 @@ Live2DManager.prototype.setupTouchZoom = function(model) {
     if (view.lastTouchEndListener) {
         view.removeEventListener('touchend', view.lastTouchEndListener);
     }
-    
+
     // 添加新的监听器
     view.addEventListener('touchstart', onTouchStart, { passive: false });
     view.addEventListener('touchmove', onTouchMove, { passive: false });
     view.addEventListener('touchend', onTouchEnd, { passive: false });
-    
+
     // 保存监听器引用，便于清理
     view.lastTouchStartListener = onTouchStart;
     view.lastTouchMoveListener = onTouchMove;
@@ -226,9 +226,9 @@ Live2DManager.prototype.setupTouchZoom = function(model) {
 };
 
 // 启用鼠标跟踪以检测与模型的接近度
-Live2DManager.prototype.enableMouseTracking = function(model, options = {}) {
+Live2DManager.prototype.enableMouseTracking = function (model, options = {}) {
     const { threshold = 70 } = options;
-    
+
     // 使用实例属性保存定时器，便于在其他地方访问
     if (this._hideButtonsTimer) {
         clearTimeout(this._hideButtonsTimer);
@@ -239,7 +239,7 @@ Live2DManager.prototype.enableMouseTracking = function(model, options = {}) {
     const showButtons = () => {
         const lockIcon = document.getElementById('live2d-lock-icon');
         const floatingButtons = document.getElementById('live2d-floating-buttons');
-        
+
         // 如果已经点击了"请她离开"，不显示锁按钮，但保持显示"请她回来"按钮
         if (this._goodbyeClicked) {
             if (lockIcon) {
@@ -247,29 +247,29 @@ Live2DManager.prototype.enableMouseTracking = function(model, options = {}) {
             }
             return;
         }
-        
+
         this.isFocusing = true;
         if (lockIcon) lockIcon.style.display = 'block';
         // 锁定状态下不显示浮动菜单
         if (floatingButtons && !this.isLocked) floatingButtons.style.display = 'flex';
-        
+
         // 清除隐藏定时器
         if (this._hideButtonsTimer) {
             clearTimeout(this._hideButtonsTimer);
             this._hideButtonsTimer = null;
         }
     };
-    
+
     // 辅助函数：启动隐藏定时器
     const startHideTimer = (delay = 1000) => {
         const lockIcon = document.getElementById('live2d-lock-icon');
         const floatingButtons = document.getElementById('live2d-floating-buttons');
-        
+
         if (this._goodbyeClicked) return;
-        
+
         // 如果已有定时器，不重复创建
         if (this._hideButtonsTimer) return;
-        
+
         this._hideButtonsTimer = setTimeout(() => {
             // 再次检查鼠标是否在按钮区域内
             if (this._isMouseOverButtons) {
@@ -278,7 +278,7 @@ Live2DManager.prototype.enableMouseTracking = function(model, options = {}) {
                 startHideTimer(delay);
                 return;
             }
-            
+
             this.isFocusing = false;
             if (lockIcon) lockIcon.style.display = 'none';
             if (floatingButtons && !this._goodbyeClicked) {
@@ -292,28 +292,28 @@ Live2DManager.prototype.enableMouseTracking = function(model, options = {}) {
     model.on('pointerover', () => {
         showButtons();
     });
-    
+
     model.on('pointerout', () => {
         // 鼠标离开模型，启动隐藏定时器
         startHideTimer();
     });
-    
+
     // 方法2：同时保留 window 的 pointermove 监听（适用于普通浏览器）
     const onPointerMove = (event) => {
         // 使用 clientX/Y 作为全局坐标
         const pointer = { x: event.clientX, y: event.clientY };
-        
+
         // 在拖拽期间不执行任何操作
         if (model.interactive && model.dragging) {
             return;
         }
-        
+
         // 如果已经点击了"请她离开"，特殊处理
         if (this._goodbyeClicked) {
             const lockIcon = document.getElementById('live2d-lock-icon');
             const floatingButtons = document.getElementById('live2d-floating-buttons');
             const returnButtonContainer = document.getElementById('live2d-return-button-container');
-            
+
             if (lockIcon) {
                 lockIcon.style.setProperty('display', 'none', 'important');
             }
@@ -357,7 +357,7 @@ Live2DManager.prototype.enableMouseTracking = function(model, options = {}) {
 
     // 使用 window 监听鼠标移动
     window.addEventListener('pointermove', onPointerMove);
-    
+
     // 监听浮动按钮容器的鼠标进入/离开事件
     // 延迟设置，因为按钮容器可能还没创建
     setTimeout(() => {
@@ -371,14 +371,14 @@ Live2DManager.prototype.enableMouseTracking = function(model, options = {}) {
                     this._hideButtonsTimer = null;
                 }
             });
-            
+
             floatingButtons.addEventListener('mouseleave', () => {
                 this._isMouseOverButtons = false;
                 // 鼠标离开按钮区域，启动隐藏定时器
                 startHideTimer();
             });
         }
-        
+
         // 同样处理锁图标
         const lockIcon = document.getElementById('live2d-lock-icon');
         if (lockIcon) {
@@ -389,7 +389,7 @@ Live2DManager.prototype.enableMouseTracking = function(model, options = {}) {
                     this._hideButtonsTimer = null;
                 }
             });
-            
+
             lockIcon.addEventListener('mouseleave', () => {
                 this._isMouseOverButtons = false;
                 startHideTimer();
@@ -399,22 +399,22 @@ Live2DManager.prototype.enableMouseTracking = function(model, options = {}) {
 };
 
 // 交互后保存位置和缩放的辅助函数
-Live2DManager.prototype._savePositionAfterInteraction = function() {
+Live2DManager.prototype._savePositionAfterInteraction = function () {
     if (!this.currentModel || !this._lastLoadedModelPath) {
         console.debug('无法保存位置：模型或路径未设置');
         return;
     }
-    
+
     const position = { x: this.currentModel.x, y: this.currentModel.y };
     const scale = { x: this.currentModel.scale.x, y: this.currentModel.scale.y };
-    
+
     // 验证数据有效性
     if (!Number.isFinite(position.x) || !Number.isFinite(position.y) ||
         !Number.isFinite(scale.x) || !Number.isFinite(scale.y)) {
         console.warn('位置或缩放数据无效，跳过保存');
         return;
     }
-    
+
     // 异步保存，不阻塞交互
     this.saveUserPreferences(this._lastLoadedModelPath, position, scale)
         .then(success => {
@@ -430,15 +430,86 @@ Live2DManager.prototype._savePositionAfterInteraction = function() {
 };
 
 // 防抖动保存位置的辅助函数（用于滚轮缩放等连续操作）
-Live2DManager.prototype._debouncedSavePosition = function() {
+Live2DManager.prototype._debouncedSavePosition = function () {
     // 清除之前的定时器
     if (this._savePositionDebounceTimer) {
         clearTimeout(this._savePositionDebounceTimer);
     }
-    
+
     // 设置新的定时器，500ms后保存
     this._savePositionDebounceTimer = setTimeout(() => {
         this._savePositionAfterInteraction();
     }, 500);
 };
+
+// 设置解锁状态下的单击交互（单击播放随机 motion，区分拖拽）
+Live2DManager.prototype.setupClickInteraction = function (model) {
+    let pointerDownPos = null;
+    let pointerDownTime = 0;
+    let isClickHandling = false; // 防抖标志
+    const CLICK_THRESHOLD = 10; // 移动距离阈值（像素）
+    const CLICK_TIME_THRESHOLD = 300; // 点击时间阈值（毫秒）
+
+    model.on('pointerdown', (event) => {
+        // 锁定状态下不处理
+        if (this.isLocked) return;
+
+        // 记录按下位置和时间
+        pointerDownPos = { x: event.data.global.x, y: event.data.global.y };
+        pointerDownTime = Date.now();
+    });
+
+    model.on('pointerup', (event) => {
+        // 锁定状态下不处理
+        if (this.isLocked) {
+            pointerDownPos = null;
+            return;
+        }
+
+        // 如果没有记录按下位置，忽略
+        if (!pointerDownPos) return;
+
+        // 计算移动距离
+        const dx = event.data.global.x - pointerDownPos.x;
+        const dy = event.data.global.y - pointerDownPos.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // 计算按下时间
+        const elapsed = Date.now() - pointerDownTime;
+
+        // 重置记录
+        pointerDownPos = null;
+
+        // 判断是否为有效单击（移动距离小且时间短）
+        if (distance < CLICK_THRESHOLD && elapsed < CLICK_TIME_THRESHOLD) {
+            // 防抖处理
+            if (isClickHandling) return;
+            isClickHandling = true;
+
+            console.log('检测到单击（非拖拽），准备播放随机 motion');
+
+            // 播放随机 motion
+            this.playRandomMotion();
+
+            // 500ms 后重置防抖标志
+            setTimeout(() => {
+                isClickHandling = false;
+            }, 500);
+        }
+    });
+
+    // 如果指针离开模型区域，重置记录
+    model.on('pointerupoutside', () => {
+        pointerDownPos = null;
+    });
+
+    model.on('pointercancel', () => {
+        pointerDownPos = null;
+    });
+
+    console.log('已设置解锁状态下的单击交互（区分拖拽）');
+};
+
+// 保留旧名称作为别名以兼容
+Live2DManager.prototype.setupLockedClickInteraction = Live2DManager.prototype.setupClickInteraction;
 
